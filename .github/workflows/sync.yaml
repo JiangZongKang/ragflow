@@ -24,7 +24,7 @@ jobs:
       run: |
         git remote add upstream https://github.com/infiniflow/ragflow.git # 原仓库地址
         git fetch upstream
-        git merge upstream/main # 与原仓库的主分支同步
+        git merge upstream/main --allow-unrelated-histories  # 与原仓库的主分支同步
 
     - name: Push changes
       run: |
