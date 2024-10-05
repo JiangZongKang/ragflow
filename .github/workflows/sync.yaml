@@ -1,0 +1,33 @@
+name: Sync Fork
+
+on:
+  schedule:
+    - cron: '0 18 * * *' # 每天运行一次，具体时间可以按需修改
+  workflow_dispatch: # 手动触发
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout fork repository
+      uses: actions/checkout@v2
+      with:
+        ref: main # 需要同步的分支
+
+    - name: Set up Git
+      run: |
+        git config --global user.name "zongkang.jiang"
+        git config --global user.email "top_jzk@163.com"
+    
+    - name: Add upstream repository
+      run: |
+        git remote add upstream https://github.com/infiniflow/ragflow.git # 原仓库地址
+        git fetch upstream
+        git merge upstream/main # 与原仓库的主分支同步
+
+    - name: Push changes
+      run: |
+        git push origin main
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
