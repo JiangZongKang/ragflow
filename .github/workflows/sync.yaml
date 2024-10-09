@@ -6,28 +6,31 @@ on:
   workflow_dispatch: # 手动触发
 
 jobs:
-  sync:
+  sync_latest_from_upstream:
+    name: Sync latest commits from upstream repo
     runs-on: ubuntu-latest
+    if: ${{ github.event.repository.fork }}
 
     steps:
-    - name: Checkout fork repository
-      uses: actions/checkout@v2
-      with:
-        ref: main # 需要同步的分支
+      # Step 1: run a standard checkout action
+      - name: Checkout target repo
+        uses: actions/checkout@v3
 
-    - name: Set up Git
-      run: |
-        git config --global user.name "zongkang.jiang"
-        git config --global user.email "top_jzk@163.com"
-    
-    - name: Add upstream repository
-      run: |
-        git remote add upstream https://github.com/infiniflow/ragflow.git # 原仓库地址
-        git fetch upstream
-        git merge upstream/main --allow-unrelated-histories  # 与原仓库的主分支同步
+      # Step 2: run the sync action
+      - name: Sync upstream changes
+        id: sync
+        uses: aormsby/Fork-Sync-With-Upstream-action@v3.4
+        with:
+          upstream_sync_repo: infiniflow/ragflow
+          upstream_sync_branch: main
+          target_sync_branch: main
+          target_repo_token: ${{ secrets.GITHUB_TOKEN }} # automatically generated, no need to set
 
-    - name: Push changes
-      run: |
-        git push origin main
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Set test_mode true to run tests instead of the true action!!
+          test_mode: false
+
+      - name: Sync check
+        if: failure()
+        run: |
+          echo "[Error] Due to a change in the workflow file of the upstream repository, GitHub has automatically suspended the scheduled automatic update. You need to manually sync your fork. 
+          exit 1
