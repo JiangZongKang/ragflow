@@ -7,6 +7,9 @@ on:
 
 jobs:
   sync_latest_from_upstream:
+    permissions:
+      contents: write
+      workflows: write
     name: Sync latest commits from upstream repo
     runs-on: ubuntu-latest
     if: ${{ github.event.repository.fork }}
