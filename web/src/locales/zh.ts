@@ -676,7 +676,7 @@ export default {
       createFromTemplates: '从模板创建',
       retrieval: '知识检索',
       generate: '生成回答',
-      answer: '人机交互',
+      answer: '对话',
       categorize: '问题分类',
       relevant: '是否相关',
       rewriteQuestion: '问题优化',
@@ -1004,6 +1004,7 @@ export default {
       howUseId: '如何使用Agent ID？',
       content: '内容',
       operationResults: '运行结果',
+      autosaved: '已自动保存',
     },
     footer: {
       profile: 'All rights reserved @ React',

@@ -4,7 +4,6 @@ import { IGraph } from '@/interfaces/database/flow';
 import { useIsFetching } from '@tanstack/react-query';
 import React, {
   ChangeEvent,
-  KeyboardEventHandler,
   useCallback,
   useEffect,
   useMemo,
@@ -22,6 +21,7 @@ import { Variable } from '@/interfaces/database/chat';
 import api from '@/utils/api';
 import { useDebounceEffect } from 'ahooks';
 import { FormInstance, message } from 'antd';
+import dayjs from 'dayjs';
 import { humanId } from 'human-id';
 import { lowerFirst } from 'lodash';
 import trim from 'lodash/trim';
@@ -253,20 +253,6 @@ export const useShowDrawer = () => {
   };
 };
 
-export const useHandleKeyUp = () => {
-  const deleteEdge = useGraphStore((state) => state.deleteEdge);
-  const handleKeyUp: KeyboardEventHandler = useCallback(
-    (e) => {
-      if (e.code === 'Delete') {
-        deleteEdge();
-      }
-    },
-    [deleteEdge],
-  );
-
-  return { handleKeyUp };
-};
-
 export const useSaveGraph = () => {
   const { data } = useFetchFlow();
   const { setFlow } = useSetFlow();
@@ -282,20 +268,6 @@ export const useSaveGraph = () => {
   }, [nodes, edges, setFlow, id, data]);
 
   return { saveGraph };
-};
-
-export const useWatchGraphChange = () => {
-  const nodes = useGraphStore((state) => state.nodes);
-  const edges = useGraphStore((state) => state.edges);
-  useDebounceEffect(
-    () => {
-      // console.info('useDebounceEffect');
-    },
-    [nodes, edges],
-    {
-      wait: 1000,
-    },
-  );
 };
 
 export const useHandleFormValuesChange = (id?: string) => {
@@ -347,8 +319,6 @@ export const useFetchDataOnMount = () => {
   useEffect(() => {
     setGraphInfo(data?.dsl?.graph ?? ({} as IGraph));
   }, [setGraphInfo, data]);
-
-  useWatchGraphChange();
 
   useEffect(() => {
     refetch();
@@ -478,12 +448,21 @@ export const useSaveGraphBeforeOpeningDebugDrawer = (show: () => void) => {
   return handleRun;
 };
 
-export const useReplaceIdWithText = (output: unknown) => {
+export const useReplaceIdWithName = () => {
   const getNode = useGraphStore((state) => state.getNode);
 
-  const getNameById = (id?: string) => {
-    return getNode(id)?.data.name;
-  };
+  const replaceIdWithName = useCallback(
+    (id?: string) => {
+      return getNode(id)?.data.name;
+    },
+    [getNode],
+  );
+
+  return replaceIdWithName;
+};
+
+export const useReplaceIdWithText = (output: unknown) => {
+  const getNameById = useReplaceIdWithName();
 
   return {
     replacedOutput: replaceIdWithText(output, getNameById),
@@ -579,6 +558,7 @@ export const useWatchNodeFormDataChange = () => {
   );
 
   useEffect(() => {
+    console.info('xxx');
     nodes.forEach((node) => {
       const currentNode = getNode(node.id);
       const form = currentNode?.data.form ?? {};
@@ -639,4 +619,97 @@ export const useGetComponentLabelByValue = (nodeId: string) => {
     [options],
   );
   return getLabel;
+};
+
+export const useDuplicateNode = () => {
+  const duplicateNodeById = useGraphStore((store) => store.duplicateNode);
+  const getNodeName = useGetNodeName();
+
+  const duplicateNode = useCallback(
+    (id: string, label: string) => {
+      duplicateNodeById(id, getNodeName(label));
+    },
+    [duplicateNodeById, getNodeName],
+  );
+
+  return duplicateNode;
+};
+
+export const useCopyPaste = () => {
+  const nodes = useGraphStore((state) => state.nodes);
+  const duplicateNode = useDuplicateNode();
+
+  const onCopyCapture = useCallback(
+    (event: ClipboardEvent) => {
+      event.preventDefault();
+      const nodesStr = JSON.stringify(
+        nodes.filter((n) => n.selected && n.data.label !== Operator.Begin),
+      );
+
+      event.clipboardData?.setData('agent:nodes', nodesStr);
+    },
+    [nodes],
+  );
+
+  const onPasteCapture = useCallback(
+    (event: ClipboardEvent) => {
+      event.preventDefault();
+      const nodes = JSON.parse(
+        event.clipboardData?.getData('agent:nodes') || '[]',
+      ) as Node[] | undefined;
+      if (nodes) {
+        nodes.forEach((n) => {
+          duplicateNode(n.id, n.data.label);
+        });
+      }
+    },
+    [duplicateNode],
+  );
+
+  useEffect(() => {
+    window.addEventListener('copy', onCopyCapture);
+    return () => {
+      window.removeEventListener('copy', onCopyCapture);
+    };
+  }, [onCopyCapture]);
+
+  useEffect(() => {
+    window.addEventListener('paste', onPasteCapture);
+    return () => {
+      window.removeEventListener('paste', onPasteCapture);
+    };
+  }, [onPasteCapture]);
+};
+
+export const useWatchAgentChange = () => {
+  const [time, setTime] = useState<string>();
+  const nodes = useGraphStore((state) => state.nodes);
+  const edges = useGraphStore((state) => state.edges);
+  const { saveGraph } = useSaveGraph();
+  const { data: flowDetail } = useFetchFlow();
+
+  const setSaveTime = useCallback((updateTime: number) => {
+    setTime(dayjs(updateTime).format('YYYY-MM-DD HH:mm:ss'));
+  }, []);
+
+  useEffect(() => {
+    setSaveTime(flowDetail?.update_time);
+  }, [flowDetail, setSaveTime]);
+
+  const saveAgent = useCallback(async () => {
+    const ret = await saveGraph();
+    setSaveTime(ret.data.update_time);
+  }, [saveGraph, setSaveTime]);
+
+  useDebounceEffect(
+    () => {
+      saveAgent();
+    },
+    [nodes, edges],
+    {
+      wait: 1000 * 20,
+    },
+  );
+
+  return time;
 };

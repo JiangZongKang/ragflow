@@ -24,6 +24,7 @@ import { immer } from 'zustand/middleware/immer';
 import { Operator, SwitchElseTo } from './constant';
 import { NodeData } from './interface';
 import {
+  duplicateNodeForm,
   generateNodeNamesWithIncreasingIndex,
   getNodeDragHandle,
   getOperatorIndex,
@@ -236,13 +237,16 @@ const useGraphStore = create<RFState>()(
         const { getNode, addNode, generateNodeName } = get();
         const node = getNode(id);
         const position = {
-          x: (node?.position?.x || 0) + 30,
-          y: (node?.position?.y || 0) + 20,
+          x: (node?.position?.x || 0) + 50,
+          y: (node?.position?.y || 0) + 50,
         };
 
         addNode({
           ...(node || {}),
-          data: { ...(node?.data ?? {}), name: generateNodeName(name) },
+          data: {
+            ...duplicateNodeForm(node?.data),
+            name: generateNodeName(name),
+          },
           selected: false,
           dragging: false,
           id: `${node?.data?.label}:${humanId()}`,
