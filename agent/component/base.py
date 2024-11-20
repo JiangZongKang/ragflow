@@ -17,13 +17,13 @@ from abc import ABC
 import builtins
 import json
 import os
+import logging
 from functools import partial
 from typing import Tuple, Union
 
 import pandas as pd
 
 from agent import settings
-from agent.settings import flow_logger, DEBUG
 
 _FEEDED_DEPRECATED_PARAMS = "_feeded_deprecated_params"
 _DEPRECATED_PARAMS = "_deprecated_params"
@@ -440,7 +440,7 @@ class ComponentBase(ABC):
         setattr(self._param, self._param.output_var_name, None)
         self._param.inputs = []
 
-    def set_output(self, v: pd.DataFrame):
+    def set_output(self, v: partial | pd.DataFrame):
         setattr(self._param, self._param.output_var_name, v)
 
     def get_input(self):
@@ -454,7 +454,7 @@ class ComponentBase(ABC):
             outs = []
             for q in self._param.query:
                 if q["component_id"]:
-                    if q["component_id"].split("@")[0].lower().find("begin") > 0:
+                    if q["component_id"].split("@")[0].lower().find("begin") >= 0:
                         cpn_id, key = q["component_id"].split("@")
                         for p in self._canvas.get_component(cpn_id)["obj"]._param.query:
                             if p["key"] == key:
@@ -480,7 +480,6 @@ class ComponentBase(ABC):
 
         upstream_outs = []
 
-        if DEBUG: print(self.component_name, reversed_cpnts[::-1])
         for u in reversed_cpnts[::-1]:
             if self.get_component_name(u) in ["switch", "concentrator"]: continue
             if self.component_name.lower() == "generate" and self.get_component_name(u) == "retrieval":
