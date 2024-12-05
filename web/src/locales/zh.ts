@@ -326,6 +326,8 @@ export default {
       ellipse: '省略',
       graph: '知识图谱',
       mind: '思维导图',
+      question: '问题',
+      questionTip: `如果有给定的问题，则块的嵌入将基于它们。`,
     },
     chat: {
       newConversation: '新会话',
