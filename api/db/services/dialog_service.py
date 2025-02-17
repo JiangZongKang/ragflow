@@ -204,9 +204,6 @@ def chat(dialog, messages, stream=True, **kwargs):
     attachments = kwargs["doc_ids"].split(",") if "doc_ids" in kwargs else None
     if "doc_ids" in messages[-1]:
         attachments = messages[-1]["doc_ids"]
-        for m in messages[:-1]:
-            if "doc_ids" in m:
-                attachments.extend(m["doc_ids"])
 
     create_retriever_ts = timer()
 
@@ -570,6 +567,7 @@ Requirements:
     kwd = chat_mdl.chat(prompt, msg[1:], {"temperature": 0.2})
     if isinstance(kwd, tuple):
         kwd = kwd[0]
+    kwd = re.sub(r"<think>.*</think>", "", kwd)
     if kwd.find("**ERROR**") >= 0:
         return ""
     return kwd
@@ -599,6 +597,7 @@ Requirements:
     kwd = chat_mdl.chat(prompt, msg[1:], {"temperature": 0.2})
     if isinstance(kwd, tuple):
         kwd = kwd[0]
+    kwd = re.sub(r"<think>.*</think>", "", kwd)
     if kwd.find("**ERROR**") >= 0:
         return ""
     return kwd
@@ -669,6 +668,7 @@ Output: What's the weather in Rochester on {tomorrow}?
 ###############
     """
     ans = chat_mdl.chat(prompt, [{"role": "user", "content": "Output: "}], {"temperature": 0.2})
+    ans = re.sub(r"<think>.*</think>", "", ans)
     return ans if ans.find("**ERROR**") < 0 else messages[-1]["content"]
 
 
@@ -793,6 +793,7 @@ Output:
     kwd = chat_mdl.chat(prompt, msg[1:], {"temperature": 0.5})
     if isinstance(kwd, tuple):
         kwd = kwd[0]
+    kwd = re.sub(r"<think>.*</think>", "", kwd)
     if kwd.find("**ERROR**") >= 0:
         raise Exception(kwd)
 
